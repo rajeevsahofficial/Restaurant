@@ -13,7 +13,7 @@ const DEFAULT_CATEGORIES = [
 ];
 
 interface MenuItemFormProps {
-  initialData?: Partial<Food> & { dbId?: number }; // dbId = Supabase row id
+  initialData?: Partial<Food> & { dbId?: number };
   mode: "new" | "edit";
 }
 
@@ -21,71 +21,58 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
   const router = useRouter();
   const supabase = createClient();
 
-  const [name, setName] = useState(initialData.name ?? "");
-  const [description, setDescription] = useState(initialData.description ?? "");
-  const [price, setPrice] = useState(String(initialData.price ?? ""));
-  const [category, setCategory] = useState(initialData.category ?? DEFAULT_CATEGORIES[0]);
-  const [customCategory, setCustomCategory] = useState("");
-  const [useCustomCategory, setUseCustomCategory] = useState(
+  const [name, setName]           = useState(initialData.name ?? "");
+  const [description, setDesc]    = useState(initialData.description ?? "");
+  const [price, setPrice]         = useState(String(initialData.price ?? ""));
+  const [category, setCategory]   = useState(initialData.category ?? DEFAULT_CATEGORIES[0]);
+  const [customCategory, setCC]   = useState("");
+  const [useCustomCat, setUseCC]  = useState(
     !!initialData.category && !DEFAULT_CATEGORIES.includes(initialData.category),
   );
-  const [veg, setVeg] = useState(initialData.veg ?? true);
-  const [popular, setPopular] = useState(initialData.popular ?? false);
-  const [image, setImage] = useState(initialData.image ?? "");
-  const [rating, setRating] = useState(String(initialData.rating ?? "4.5"));
-  const [reviews, setReviews] = useState(String(initialData.reviews ?? "0"));
-  const [customizations, setCustomizations] = useState<Customization[]>(
+  const [veg, setVeg]             = useState(initialData.veg ?? true);
+  const [popular, setPopular]     = useState(initialData.popular ?? false);
+  const [image, setImage]         = useState(initialData.image ?? "");
+  const [rating, setRating]       = useState(String(initialData.rating ?? "4.5"));
+  const [reviews, setReviews]     = useState(String(initialData.reviews ?? "0"));
+  const [customizations, setCust] = useState<Customization[]>(
     initialData.customizations ?? [],
   );
-  const [saving, setSaving] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving]       = useState(false);
+  const [errors, setErrors]       = useState<Record<string, string>>({});
 
   function validate() {
     const e: Record<string, string> = {};
-    if (!name.trim()) e.name = "Name is required";
+    if (!name.trim())        e.name        = "Name is required";
     if (!description.trim()) e.description = "Description is required";
-    if (!price || isNaN(Number(price)) || Number(price) <= 0) e.price = "Enter a valid price";
-    if (useCustomCategory && !customCategory.trim()) e.category = "Category name is required";
-    if (!image.trim()) e.image = "Image URL is required";
+    if (!price || isNaN(Number(price)) || Number(price) <= 0)
+                             e.price       = "Enter a valid price";
+    if (useCustomCat && !customCategory.trim())
+                             e.category    = "Category name is required";
+    if (!image.trim())       e.image       = "Image URL is required";
     return e;
   }
 
   function addCustomization() {
-    setCustomizations((prev) => [...prev, { label: "", options: [""], defaultIndex: 0 }]);
+    setCust((prev) => [...prev, { label: "", options: [""], defaultIndex: 0 }]);
   }
-
-  function updateCustomization(index: number, field: keyof Customization, value: string | string[] | number) {
-    setCustomizations((prev) =>
-      prev.map((c, i) => (i === index ? { ...c, [field]: value } : c)),
+  function updateCustomization(i: number, field: keyof Customization, value: string | string[] | number) {
+    setCust((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
+  }
+  function addOption(ci: number) {
+    setCust((prev) => prev.map((c, i) => i === ci ? { ...c, options: [...c.options, ""] } : c));
+  }
+  function updateOption(ci: number, oi: number, v: string) {
+    setCust((prev) =>
+      prev.map((c, i) => i === ci ? { ...c, options: c.options.map((o, j) => j === oi ? v : o) } : c),
     );
   }
-
-  function addOption(custIndex: number) {
-    setCustomizations((prev) =>
-      prev.map((c, i) => i === custIndex ? { ...c, options: [...c.options, ""] } : c),
+  function removeOption(ci: number, oi: number) {
+    setCust((prev) =>
+      prev.map((c, i) => i === ci ? { ...c, options: c.options.filter((_, j) => j !== oi) } : c),
     );
   }
-
-  function updateOption(custIndex: number, optIndex: number, value: string) {
-    setCustomizations((prev) =>
-      prev.map((c, i) =>
-        i === custIndex
-          ? { ...c, options: c.options.map((o, j) => (j === optIndex ? value : o)) }
-          : c,
-      ),
-    );
-  }
-
-  function removeOption(custIndex: number, optIndex: number) {
-    setCustomizations((prev) =>
-      prev.map((c, i) =>
-        i === custIndex ? { ...c, options: c.options.filter((_, j) => j !== optIndex) } : c,
-      ),
-    );
-  }
-
-  function removeCustomization(index: number) {
-    setCustomizations((prev) => prev.filter((_, i) => i !== index));
+  function removeCustomization(i: number) {
+    setCust((prev) => prev.filter((_, idx) => idx !== i));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -99,7 +86,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     setErrors({});
     setSaving(true);
 
-    const finalCategory = useCustomCategory ? customCategory.trim() : category;
+    const finalCategory = useCustomCat ? customCategory.trim() : category;
     const payload = {
       name: name.trim(),
       description: description.trim(),
@@ -115,23 +102,17 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     };
 
     let dbError = null;
-
     if (mode === "new") {
       const { error } = await supabase.from("menu_items").insert(payload);
       dbError = error;
     } else {
-      // Use dbId (Supabase bigserial id) if available, fall back to Food.id
       const rowId = initialData.dbId ?? initialData.id;
-      const { error } = await supabase
-        .from("menu_items")
-        .update(payload)
-        .eq("id", rowId);
+      const { error } = await supabase.from("menu_items").update(payload).eq("id", rowId);
       dbError = error;
     }
 
     if (dbError) {
-      console.error(dbError);
-      toast.error(dbError.message || "Something went wrong. Please try again.");
+      toast.error(dbError.message || "Something went wrong.");
       setSaving(false);
       return;
     }
@@ -141,33 +122,18 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     router.refresh();
   }
 
-  // ── Field wrapper ──────────────────────────────────────────────────────────
-  const Field = ({
-    label, error, required, children,
-  }: { label: string; error?: string; required?: boolean; children: React.ReactNode }) => (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-semibold uppercase tracking-widest text-white/50">
-        {label} {required && <span className="text-red-400">*</span>}
-      </label>
-      {children}
-      {error && <p className="text-xs text-red-400">{error}</p>}
-    </div>
-  );
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+    <form onSubmit={handleSubmit} className="space-y-5" noValidate>
 
-      {/* ── Basic info ── */}
-      <div className="rounded-2xl border border-white/6 bg-white/4 p-5 space-y-5">
-        <h2 className="text-sm font-bold text-white">Basic Information</h2>
-
+      {/* ── Basic information ── */}
+      <Section title="Basic Information">
         <Field label="Dish Name" error={errors.name} required>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Paneer Tikka"
-            className={cn(inputCls, errors.name && ringError)}
+            className={iCls(!!errors.name)}
           />
         </Field>
 
@@ -175,9 +141,9 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
           <textarea
             rows={3}
             value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => setDesc(e.target.value)}
             placeholder="Describe the dish — ingredients, cooking style, accompaniments…"
-            className={cn(inputCls, "resize-none", errors.description && ringError)}
+            className={cn(iCls(!!errors.description), "resize-none")}
           />
         </Field>
 
@@ -189,7 +155,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="249"
-              className={cn(inputCls, errors.price && ringError)}
+              className={iCls(!!errors.price)}
             />
           </Field>
           <Field label="Image URL" error={errors.image} required>
@@ -198,13 +164,16 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               value={image}
               onChange={(e) => setImage(e.target.value)}
               placeholder="https://…"
-              className={cn(inputCls, errors.image && ringError)}
+              className={iCls(!!errors.image)}
             />
           </Field>
         </div>
 
         {image && (
-          <div className="overflow-hidden rounded-xl border border-white/8">
+          <div
+            className="overflow-hidden rounded-lg"
+            style={{ border: "1px solid var(--admin-border)" }}
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image}
@@ -214,26 +183,29 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
             />
           </div>
         )}
-      </div>
+      </Section>
 
       {/* ── Category & flags ── */}
-      <div className="rounded-2xl border border-white/6 bg-white/4 p-5 space-y-5">
-        <h2 className="text-sm font-bold text-white">Category & Flags</h2>
-
+      <Section title="Category & Flags">
         <Field label="Category" error={errors.category} required>
-          {useCustomCategory ? (
+          {useCustomCat ? (
             <div className="flex gap-2">
               <input
                 type="text"
                 value={customCategory}
-                onChange={(e) => setCustomCategory(e.target.value)}
+                onChange={(e) => setCC(e.target.value)}
                 placeholder="New category name"
-                className={cn(inputCls, "flex-1", errors.category && ringError)}
+                className={cn(iCls(!!errors.category), "flex-1")}
               />
               <button
                 type="button"
-                onClick={() => setUseCustomCategory(false)}
-                className="rounded-xl border border-white/10 px-3 text-xs text-white/50 hover:text-white/80"
+                onClick={() => setUseCC(false)}
+                className="rounded-lg px-3 text-sm transition"
+                style={{
+                  border: "1px solid var(--admin-border-strong)",
+                  color: "var(--admin-text-secondary)",
+                  background: "var(--admin-card-bg)",
+                }}
               >
                 Cancel
               </button>
@@ -243,7 +215,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className={cn(inputCls, "flex-1 [&>option]:bg-[#1a1816]")}
+                className={cn(iCls(false), "flex-1")}
               >
                 {DEFAULT_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -251,8 +223,13 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               </select>
               <button
                 type="button"
-                onClick={() => setUseCustomCategory(true)}
-                className="rounded-xl border border-white/10 px-3 text-xs text-white/50 hover:text-white/80 whitespace-nowrap"
+                onClick={() => setUseCC(true)}
+                className="whitespace-nowrap rounded-lg px-3 text-sm transition"
+                style={{
+                  border: "1px solid var(--admin-border-strong)",
+                  color: "var(--admin-text-secondary)",
+                  background: "var(--admin-card-bg)",
+                }}
               >
                 + New
               </button>
@@ -261,13 +238,13 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
         </Field>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Rating">
+          <Field label="Rating (1–5)">
             <input
               type="number"
               min="1" max="5" step="0.1"
               value={rating}
               onChange={(e) => setRating(e.target.value)}
-              className={inputCls}
+              className={iCls(false)}
             />
           </Field>
           <Field label="Review Count">
@@ -276,50 +253,65 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               min="0"
               value={reviews}
               onChange={(e) => setReviews(e.target.value)}
-              className={inputCls}
+              className={iCls(false)}
             />
           </Field>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <ToggleChip label="Vegetarian" active={veg} color="emerald" onClick={() => setVeg((v) => !v)} />
           <ToggleChip label="⭐ Popular" active={popular} color="amber" onClick={() => setPopular((v) => !v)} />
         </div>
-      </div>
+      </Section>
 
       {/* ── Customizations ── */}
-      <div className="rounded-2xl border border-white/6 bg-white/4 p-5 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-white">Customizations</h2>
-            <p className="mt-0.5 text-xs text-white/35">Optional — e.g. Spice level, Portion size</p>
-          </div>
+      <Section
+        title="Customizations"
+        subtitle="Optional — e.g. Spice level, Portion size"
+        action={
           <button
             type="button"
             onClick={addCustomization}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 px-3 py-2 text-xs font-medium text-white/60 transition hover:border-white/20 hover:text-white"
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
+            style={{
+              border: "1px solid var(--admin-border-strong)",
+              color: "var(--admin-accent)",
+              background: "var(--admin-accent-light)",
+            }}
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
             </svg>
             Add group
           </button>
-        </div>
-
+        }
+      >
         {customizations.map((cust, ci) => (
-          <div key={ci} className="rounded-xl border border-white/8 bg-white/4 p-4 space-y-3">
+          <div
+            key={ci}
+            className="space-y-3 rounded-lg p-4"
+            style={{
+              border: "1px solid var(--admin-border)",
+              background: "var(--admin-bg)",
+            }}
+          >
             <div className="flex items-center gap-3">
               <input
                 type="text"
                 value={cust.label}
                 onChange={(e) => updateCustomization(ci, "label", e.target.value)}
                 placeholder="Label (e.g. Spice Level)"
-                className={cn(inputCls, "flex-1 text-sm")}
+                className={cn(iCls(false), "flex-1")}
               />
               <button
                 type="button"
                 onClick={() => removeCustomization(ci)}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10 text-red-400 transition hover:bg-red-500/20"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
+                style={{
+                  background: "var(--admin-danger-bg)",
+                  border: "1px solid var(--admin-danger-border)",
+                  color: "var(--admin-danger)",
+                }}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6 6 18M6 6l12 12" />
@@ -334,12 +326,12 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
                     type="button"
                     onClick={() => updateCustomization(ci, "defaultIndex", oi)}
                     title="Set as default"
-                    className={cn(
-                      "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition",
+                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition"
+                    style={
                       cust.defaultIndex === oi
-                        ? "border-[#a96534] bg-[#a96534]"
-                        : "border-white/20 hover:border-white/50",
-                    )}
+                        ? { borderColor: "var(--admin-accent)", background: "var(--admin-accent)" }
+                        : { borderColor: "var(--admin-border-strong)", background: "transparent" }
+                    }
                   >
                     {cust.defaultIndex === oi && (
                       <svg viewBox="0 0 24 24" className="h-2.5 w-2.5 text-white" fill="currentColor">
@@ -352,13 +344,14 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
                     value={opt}
                     onChange={(e) => updateOption(ci, oi, e.target.value)}
                     placeholder={`Option ${oi + 1}`}
-                    className={cn(inputCls, "flex-1 text-sm py-2")}
+                    className={cn(iCls(false), "flex-1 py-2")}
                   />
                   {cust.options.length > 1 && (
                     <button
                       type="button"
                       onClick={() => removeOption(ci, oi)}
-                      className="text-white/25 transition hover:text-white/60"
+                      className="transition hover:opacity-60"
+                      style={{ color: "var(--admin-text-muted)" }}
                     >
                       <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M18 6 6 18M6 6l12 12" />
@@ -372,27 +365,34 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
             <button
               type="button"
               onClick={() => addOption(ci)}
-              className="text-xs text-[#d4894f] hover:text-[#e9a870] transition-colors"
+              className="text-xs font-medium transition hover:underline"
+              style={{ color: "var(--admin-accent)" }}
             >
               + Add option
             </button>
           </div>
         ))}
-      </div>
+      </Section>
 
       {/* ── Actions ── */}
       <div className="flex gap-3 pb-10">
         <button
           type="button"
           onClick={() => router.back()}
-          className="flex-1 rounded-xl border border-white/10 py-3 text-sm font-medium text-white/60 transition hover:border-white/20 hover:text-white"
+          className="flex-1 rounded-lg py-3 text-sm font-medium transition hover:opacity-80"
+          style={{
+            border: "1px solid var(--admin-border-strong)",
+            color: "var(--admin-text-secondary)",
+            background: "var(--admin-card-bg)",
+          }}
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-br from-[#a96534] to-[#7a4825] py-3 text-sm font-semibold text-white shadow-lg shadow-[#a96534]/20 transition hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+          className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
+          style={{ background: "var(--admin-accent)" }}
         >
           {saving ? (
             <>
@@ -409,32 +409,131 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
   );
 }
 
-function ToggleChip({ label, active, color, onClick }: {
-  label: string; active: boolean; color: "emerald" | "amber"; onClick: () => void;
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+function Section({
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
 }) {
+  return (
+    <div
+      className="overflow-hidden rounded-xl"
+      style={{
+        background: "var(--admin-card-bg)",
+        border: "1px solid var(--admin-border)",
+      }}
+    >
+      <div
+        className="flex items-center justify-between px-5 py-4"
+        style={{ borderBottom: "1px solid var(--admin-border)" }}
+      >
+        <div>
+          <p className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>
+            {title}
+          </p>
+          {subtitle && (
+            <p className="mt-0.5 text-xs" style={{ color: "var(--admin-text-muted)" }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="space-y-4 p-5">{children}</div>
+    </div>
+  );
+}
+
+function Field({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label
+        className="block text-[13px] font-semibold"
+        style={{ color: "var(--admin-text-primary)" }}
+      >
+        {label}{" "}
+        {required && <span style={{ color: "var(--admin-danger)" }}>*</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--admin-danger)" }}>
+          <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ToggleChip({
+  label,
+  active,
+  color,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  color: "emerald" | "amber";
+  onClick: () => void;
+}) {
+  const activeStyle =
+    color === "emerald"
+      ? { background: "var(--admin-success-bg)", border: "1px solid var(--admin-success-border)", color: "var(--admin-success)" }
+      : { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" };
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "flex items-center gap-2 rounded-xl border px-4 py-2.5 text-sm font-medium transition",
-        active && color === "emerald" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
-        active && color === "amber"   && "border-amber-500/30 bg-amber-500/10 text-amber-400",
-        !active && "border-white/8 bg-white/5 text-white/40 hover:text-white/70",
-      )}
+      className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition"
+      style={
+        active
+          ? activeStyle
+          : {
+              border: "1px solid var(--admin-border-strong)",
+              color: "var(--admin-text-secondary)",
+              background: "var(--admin-card-bg)",
+            }
+      }
     >
-      <div className={cn(
-        "h-2 w-2 rounded-full",
-        active && color === "emerald" && "bg-emerald-400",
-        active && color === "amber"   && "bg-amber-400",
-        !active && "bg-white/20",
-      )} />
+      <span
+        className="h-2 w-2 rounded-full"
+        style={{
+          background: active
+            ? color === "emerald"
+              ? "#34c38f"
+              : "#f1b44c"
+            : "var(--admin-border-strong)",
+        }}
+      />
       {label}
     </button>
   );
 }
 
-const inputCls =
-  "w-full rounded-xl border border-white/10 bg-white/8 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-[#a96534]/60 focus:ring-2 focus:ring-[#a96534]/20";
-
-const ringError = "border-red-400/60 ring-1 ring-red-400/30";
+function iCls(hasError: boolean) {
+  return cn(
+    "admin-input",
+    hasError && "has-error",
+  );
+}

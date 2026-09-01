@@ -5,13 +5,22 @@ interface FooterProps {
   tagline?: string;
   copyrightYear?: number;
   address?: string;
+  phone?: string;
+  email?: string;
 }
 
-export default function Footer({ name, tagline, copyrightYear, address }: FooterProps) {
-  const displayName = name || RESTAURANT_CONFIG.name;
-  const displayTagline = tagline || RESTAURANT_CONFIG.tagline;
-  const displayYear = copyrightYear || RESTAURANT_CONFIG.copyrightYear;
-  const displayAddress = address || "123 Main Road, Dehradun, Uttarakhand";
+export default function Footer({
+  name,
+  tagline,
+  copyrightYear,
+  address,
+  phone,
+  email,
+}: FooterProps) {
+  const displayName        = name        || RESTAURANT_CONFIG.name;
+  const displayTagline     = tagline     || RESTAURANT_CONFIG.tagline;
+  const displayYear        = copyrightYear || RESTAURANT_CONFIG.copyrightYear;
+  const displayAddress     = address     || "123 Main Road, Dehradun, Uttarakhand";
 
   return (
     <footer className="relative overflow-hidden">
@@ -46,6 +55,7 @@ export default function Footer({ name, tagline, copyrightYear, address }: Footer
             ))}
           </div>
 
+          {/* Address */}
           <div className="mt-4 flex items-start justify-center gap-1.5">
             <svg viewBox="0 0 24 24" className="mt-px h-3.5 w-3.5 shrink-0 text-[#c4a97d]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
               <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
@@ -55,6 +65,35 @@ export default function Footer({ name, tagline, copyrightYear, address }: Footer
               {displayAddress}
             </span>
           </div>
+
+          {/* Phone & Email — only shown if set */}
+          {(phone || email) && (
+            <div className="mt-2.5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+              {phone && (
+                <a
+                  href={`tel:${phone.replace(/\s/g, "")}`}
+                  className="flex items-center gap-1.5 text-[10px] text-black/40 transition hover:text-[#8d7b61] dark:text-white/30 dark:hover:text-[#c4a97d]/70"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.61 3.38 2 2 0 0 1 3.6 1.21h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.85a16 16 0 0 0 6 6l.96-.96a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 21.73 16z" />
+                  </svg>
+                  {phone}
+                </a>
+              )}
+              {email && (
+                <a
+                  href={`mailto:${email}`}
+                  className="flex items-center gap-1.5 text-[10px] text-black/40 transition hover:text-[#8d7b61] dark:text-white/30 dark:hover:text-[#c4a97d]/70"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                  {email}
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="my-3.5 flex items-center gap-3">

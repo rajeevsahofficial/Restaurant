@@ -12,11 +12,30 @@ export const metadata: Metadata = {
   description: `Order from ${RESTAURANT_CONFIG.name}. Scan the QR code at your table, browse our menu and place your order directly on WhatsApp.`,
 };
 
+/**
+ * Inline script injected into <head> — runs synchronously before any paint.
+ * Reads the persisted admin theme from localStorage and applies the "dark"
+ * class to <html> immediately, preventing a flash of wrong theme.
+ * Kept as a plain string so Next.js serialises it with dangerouslySetInnerHTML.
+ */
+const themeInitScript = `
+(function(){
+  try {
+    var t = localStorage.getItem('admin-theme');
+    if (t === 'dark') document.documentElement.classList.add('dark');
+  } catch(e) {}
+})();
+`.trim();
+
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* No-flash theme script — must be the very first thing in <head> */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body className="antialiased">
         <CartProvider>{children}</CartProvider>
         <Toaster

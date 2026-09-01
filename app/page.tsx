@@ -222,6 +222,8 @@ function HomeContent() {
           tagline={siteSettings?.tagline}
           copyrightYear={siteSettings?.copyrightYear}
           address={siteSettings?.address}
+          phone={siteSettings?.phone}
+          email={siteSettings?.email}
         />
       </main>
 

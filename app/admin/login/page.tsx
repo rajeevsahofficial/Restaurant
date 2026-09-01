@@ -17,59 +17,63 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setLoading(true);
     setError(null);
-
     const supabase = createClient();
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
-
     if (authError) {
       setError(authError.message);
       setLoading(false);
       return;
     }
-
     router.push("/admin/dashboard");
     router.refresh();
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0908] flex items-center justify-center px-4">
-      {/* Subtle grid background */}
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage:
-            "linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-        }}
-      />
+    <div
+      className="flex min-h-screen flex-col items-center justify-center px-4 py-12"
+      style={{ background: "var(--admin-bg)" }}
+    >
+      {/* Card */}
+      <div className="w-full max-w-[400px]">
 
-      {/* Glow */}
-      <div className="pointer-events-none fixed left-1/2 top-0 -translate-x-1/2 h-[420px] w-[420px] rounded-full bg-[#a96534]/15 blur-[120px]" />
-
-      <div className="relative w-full max-w-sm">
-        {/* Logo area */}
+        {/* Logo block */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#a96534] to-[#7a4825] shadow-lg shadow-[#a96534]/25">
-            <svg viewBox="0 0 24 24" className="h-7 w-7 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <div
+            className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl shadow-md"
+            style={{ background: "var(--admin-accent)" }}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6 text-white" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M3 11l19-9-9 19-2-8-8-2z" />
             </svg>
           </div>
-          <h1 className="text-xl font-bold text-white">{RESTAURANT_CONFIG.name}</h1>
-          <p className="mt-1 text-sm text-white/40">Admin Panel</p>
+          <h1 className="text-[22px] font-bold" style={{ color: "var(--admin-text-primary)" }}>
+            {RESTAURANT_CONFIG.name}
+          </h1>
+          <p className="mt-1 text-sm" style={{ color: "var(--admin-text-secondary)" }}>
+            Sign in to the Admin Panel
+          </p>
         </div>
 
-        {/* Card */}
-        <div className="rounded-3xl border border-white/8 bg-white/5 p-8 backdrop-blur-xl">
-          <h2 className="text-2xl font-bold text-white">Welcome back</h2>
-          <p className="mt-1 text-sm text-white/45">Sign in to manage your restaurant</p>
+        {/* Form card */}
+        <div
+          className="rounded-xl px-8 py-8 shadow-sm"
+          style={{
+            background: "var(--admin-card-bg)",
+            border: "1px solid var(--admin-border)",
+          }}
+        >
+          <form onSubmit={handleLogin} className="space-y-5" noValidate>
 
-          <form onSubmit={handleLogin} className="mt-8 space-y-5" noValidate>
             {/* Email */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-widest text-white/50">
+              <label
+                htmlFor="email"
+                className="block text-[13px] font-semibold"
+                style={{ color: "var(--admin-text-primary)" }}
+              >
                 Email
               </label>
               <input
@@ -80,19 +84,24 @@ export default function AdminLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="admin@restaurant.com"
-                className="w-full rounded-xl border border-white/10 bg-white/8 px-4 py-3 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-[#a96534]/60 focus:ring-2 focus:ring-[#a96534]/20"
+                className="admin-input"
               />
             </div>
 
             {/* Password */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="block text-xs font-semibold uppercase tracking-widest text-white/50">
+                <label
+                  htmlFor="password"
+                  className="block text-[13px] font-semibold"
+                  style={{ color: "var(--admin-text-primary)" }}
+                >
                   Password
                 </label>
                 <a
                   href="/admin/forgot-password"
-                  className="text-xs text-[#a96534] hover:text-[#c4874f] transition-colors"
+                  className="text-xs font-medium transition-colors hover:underline"
+                  style={{ color: "var(--admin-accent)" }}
                 >
                   Forgot password?
                 </a>
@@ -106,12 +115,13 @@ export default function AdminLoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-xl border border-white/10 bg-white/8 px-4 py-3 pr-11 text-sm text-white placeholder:text-white/25 outline-none transition focus:border-[#a96534]/60 focus:ring-2 focus:ring-[#a96534]/20"
+                  className="admin-input pr-11"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                  style={{ color: "var(--admin-text-muted)" }}
                   aria-label={showPassword ? "Hide password" : "Show password"}
                 >
                   {showPassword ? (
@@ -130,14 +140,21 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {/* Error */}
+            {/* Error banner */}
             {error && (
-              <div className="flex items-center gap-2.5 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 text-red-400" fill="none" stroke="currentColor" strokeWidth="2">
+              <div
+                className="flex items-center gap-2.5 rounded-lg px-4 py-3 text-sm"
+                style={{
+                  background: "rgba(244,106,106,0.08)",
+                  border: "1px solid rgba(244,106,106,0.25)",
+                  color: "var(--admin-danger)",
+                }}
+              >
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="12" cy="12" r="10" />
                   <path d="m15 9-6 6M9 9l6 6" />
                 </svg>
-                <p className="text-xs text-red-400">{error}</p>
+                {error}
               </div>
             )}
 
@@ -145,7 +162,8 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading || !email || !password}
-              className="mt-2 flex w-full items-center justify-center gap-2.5 rounded-xl bg-gradient-to-br from-[#a96534] to-[#7a4825] py-3.5 text-sm font-semibold text-white shadow-lg shadow-[#a96534]/25 transition hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-1 flex w-full items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-white shadow transition hover:opacity-90 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ background: "var(--admin-accent)" }}
             >
               {loading ? (
                 <>
@@ -156,13 +174,16 @@ export default function AdminLoginPage() {
                   Signing in…
                 </>
               ) : (
-                "Sign in to Dashboard"
+                "Sign in"
               )}
             </button>
           </form>
         </div>
 
-        <p className="mt-6 text-center text-xs text-white/25">
+        <p
+          className="mt-6 text-center text-xs"
+          style={{ color: "var(--admin-text-muted)" }}
+        >
           © {RESTAURANT_CONFIG.copyrightYear} {RESTAURANT_CONFIG.name}. All rights reserved.
         </p>
       </div>
