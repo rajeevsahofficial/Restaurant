@@ -5,22 +5,38 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { RESTAURANT_CONFIG } from "@/lib/config";
 
+// ── Validation ─────────────────────────────────────────────────────────────────
+
+function validatePasswords(password: string, confirm: string): string | null {
+  if (password !== confirm) return "Passwords do not match.";
+  if (password.length < 8)  return "Password must be at least 8 characters.";
+  return null;
+}
+
+// ── Page ───────────────────────────────────────────────────────────────────────
+
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm]   = useState("");
+  const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (password !== confirm) { setError("Passwords do not match."); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+    const validationError = validatePasswords(password, confirm);
+    if (validationError) { setError(validationError); return; }
+
     setLoading(true);
     setError(null);
-    const supabase = createClient();
-    const { error: authError } = await supabase.auth.updateUser({ password });
-    if (authError) { setError(authError.message); setLoading(false); return; }
+
+    const { error: authError } = await createClient().auth.updateUser({ password });
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
+    }
+
     router.push("/admin/dashboard");
   }
 
@@ -31,7 +47,7 @@ export default function ResetPasswordPage() {
     >
       <div className="w-full max-w-[400px]">
 
-        {/* Logo */}
+        {/* Brand header */}
         <div className="mb-8 text-center">
           <div
             className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl shadow-md"
@@ -52,10 +68,7 @@ export default function ResetPasswordPage() {
         {/* Card */}
         <div
           className="rounded-xl px-8 py-8 shadow-sm"
-          style={{
-            background: "var(--admin-card-bg)",
-            border: "1px solid var(--admin-border)",
-          }}
+          style={{ background: "var(--admin-card-bg)", border: "1px solid var(--admin-border)" }}
         >
           <h2 className="text-xl font-bold" style={{ color: "var(--admin-text-primary)" }}>
             New password
@@ -64,7 +77,7 @@ export default function ResetPasswordPage() {
             Choose a strong password for your account
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5" noValidate>
             {(["password", "confirm"] as const).map((field) => (
               <div key={field} className="space-y-1.5">
                 <label
@@ -79,11 +92,7 @@ export default function ResetPasswordPage() {
                   type="password"
                   required
                   value={field === "password" ? password : confirm}
-                  onChange={(e) =>
-                    field === "password"
-                      ? setPassword(e.target.value)
-                      : setConfirm(e.target.value)
-                  }
+                  onChange={(e) => field === "password" ? setPassword(e.target.value) : setConfirm(e.target.value)}
                   placeholder="••••••••"
                   className="admin-input"
                 />
@@ -93,11 +102,7 @@ export default function ResetPasswordPage() {
             {error && (
               <div
                 className="rounded-lg px-4 py-3 text-sm"
-                style={{
-                  background: "rgba(244,106,106,0.08)",
-                  border: "1px solid rgba(244,106,106,0.25)",
-                  color: "var(--admin-danger)",
-                }}
+                style={{ background: "var(--admin-danger-bg)", border: "1px solid var(--admin-danger-border)", color: "var(--admin-danger)" }}
               >
                 {error}
               </div>

@@ -1,21 +1,16 @@
 "use client";
 
-import MenuItemForm from "@/components/admin/MenuItemForm";
 import Link from "next/link";
+import MenuItemForm from "@/components/admin/MenuItemForm";
 
 export default function NewMenuItemPage() {
   return (
     <div className="px-4 py-6 sm:px-6 lg:px-8">
-      {/* Page header */}
       <div className="mb-6 flex items-center gap-4">
         <Link
           href="/admin/menu"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:opacity-70"
-          style={{
-            border: "1px solid var(--admin-border-strong)",
-            color: "var(--admin-text-secondary)",
-            background: "var(--admin-card-bg)",
-          }}
+          style={{ border: "1px solid var(--admin-border-strong)", color: "var(--admin-text-secondary)", background: "var(--admin-card-bg)" }}
           aria-label="Back to menu"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">

@@ -1,47 +1,172 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import type { Food, Customization } from "@/lib/data";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 
+// ── Constants ──────────────────────────────────────────────────────────────────
+
 const DEFAULT_CATEGORIES = [
   "Starters", "Soups", "Main Course", "Breads",
   "Biryani & Rice", "Desserts", "Drinks",
-];
+] as const;
+
+// ── Types ──────────────────────────────────────────────────────────────────────
 
 interface MenuItemFormProps {
   initialData?: Partial<Food> & { dbId?: number };
   mode: "new" | "edit";
 }
 
+type FormErrors = Partial<Record<"name" | "description" | "price" | "category" | "image", string>>;
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+
+function inputCls(hasError: boolean) {
+  return cn("admin-input", hasError && "has-error");
+}
+
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+function SectionCard({
+  title,
+  subtitle,
+  action,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      className="overflow-hidden rounded-xl"
+      style={{ background: "var(--admin-card-bg)", border: "1px solid var(--admin-border)" }}
+    >
+      <div
+        className="flex items-center justify-between px-5 py-4"
+        style={{ borderBottom: "1px solid var(--admin-border)" }}
+      >
+        <div>
+          <p className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>
+            {title}
+          </p>
+          {subtitle && (
+            <p className="mt-0.5 text-xs" style={{ color: "var(--admin-text-muted)" }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
+        {action}
+      </div>
+      <div className="space-y-4 p-5">{children}</div>
+    </div>
+  );
+}
+
+function FormField({
+  label,
+  error,
+  required,
+  children,
+}: {
+  label: string;
+  error?: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="block text-[13px] font-semibold" style={{ color: "var(--admin-text-primary)" }}>
+        {label}
+        {required && <span className="ml-0.5" style={{ color: "var(--admin-danger)" }}>*</span>}
+      </label>
+      {children}
+      {error && (
+        <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--admin-danger)" }}>
+          <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 8v4M12 16h.01" />
+          </svg>
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function ToggleChip({
+  label,
+  active,
+  color,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  color: "emerald" | "amber";
+  onClick: () => void;
+}) {
+  const activeStyle: React.CSSProperties =
+    color === "emerald"
+      ? { background: "var(--admin-success-bg)", border: "1px solid var(--admin-success-border)", color: "var(--admin-success)" }
+      : { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" };
+
+  const dotColor = active ? (color === "emerald" ? "#34c38f" : "#f1b44c") : "var(--admin-border-strong)";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition"
+      style={active ? activeStyle : { border: "1px solid var(--admin-border-strong)", color: "var(--admin-text-secondary)", background: "var(--admin-card-bg)" }}
+    >
+      <span className="h-2 w-2 rounded-full" style={{ background: dotColor }} />
+      {label}
+    </button>
+  );
+}
+
+function Spinner() {
+  return (
+    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+
 export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormProps) {
   const router = useRouter();
   const supabase = createClient();
 
+  // ── Form state ──
   const [name, setName]           = useState(initialData.name ?? "");
   const [description, setDesc]    = useState(initialData.description ?? "");
   const [price, setPrice]         = useState(String(initialData.price ?? ""));
-  const [category, setCategory]   = useState(initialData.category ?? DEFAULT_CATEGORIES[0]);
-  const [customCategory, setCC]   = useState("");
-  const [useCustomCat, setUseCC]  = useState(
-    !!initialData.category && !DEFAULT_CATEGORIES.includes(initialData.category),
-  );
-  const [veg, setVeg]             = useState(initialData.veg ?? true);
-  const [popular, setPopular]     = useState(initialData.popular ?? false);
   const [image, setImage]         = useState(initialData.image ?? "");
   const [rating, setRating]       = useState(String(initialData.rating ?? "4.5"));
   const [reviews, setReviews]     = useState(String(initialData.reviews ?? "0"));
-  const [customizations, setCust] = useState<Customization[]>(
-    initialData.customizations ?? [],
-  );
-  const [saving, setSaving]       = useState(false);
-  const [errors, setErrors]       = useState<Record<string, string>>({});
+  const [veg, setVeg]             = useState(initialData.veg ?? true);
+  const [popular, setPopular]     = useState(initialData.popular ?? false);
+  const [customizations, setCust] = useState<Customization[]>(initialData.customizations ?? []);
 
-  function validate() {
-    const e: Record<string, string> = {};
+  const isCustomInitial = !!initialData.category && !DEFAULT_CATEGORIES.includes(initialData.category as typeof DEFAULT_CATEGORIES[number]);
+  const [category, setCategory]   = useState(isCustomInitial ? DEFAULT_CATEGORIES[0] : (initialData.category ?? DEFAULT_CATEGORIES[0]));
+  const [customCategory, setCC]   = useState(isCustomInitial ? (initialData.category ?? "") : "");
+  const [useCustomCat, setUseCC]  = useState(isCustomInitial);
+
+  const [saving, setSaving]       = useState(false);
+  const [errors, setErrors]       = useState<FormErrors>({});
+
+  // ── Validation ──
+  function validate(): FormErrors {
+    const e: FormErrors = {};
     if (!name.trim())        e.name        = "Name is required";
     if (!description.trim()) e.description = "Description is required";
     if (!price || isNaN(Number(price)) || Number(price) <= 0)
@@ -52,29 +177,36 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     return e;
   }
 
-  function addCustomization() {
+  // ── Customization handlers ──
+  const addCustomization = useCallback(() => {
     setCust((prev) => [...prev, { label: "", options: [""], defaultIndex: 0 }]);
-  }
-  function updateCustomization(i: number, field: keyof Customization, value: string | string[] | number) {
+  }, []);
+
+  const updateCustomization = useCallback((i: number, field: keyof Customization, value: string | string[] | number) => {
     setCust((prev) => prev.map((c, idx) => idx === i ? { ...c, [field]: value } : c));
-  }
-  function addOption(ci: number) {
+  }, []);
+
+  const addOption = useCallback((ci: number) => {
     setCust((prev) => prev.map((c, i) => i === ci ? { ...c, options: [...c.options, ""] } : c));
-  }
-  function updateOption(ci: number, oi: number, v: string) {
+  }, []);
+
+  const updateOption = useCallback((ci: number, oi: number, v: string) => {
     setCust((prev) =>
       prev.map((c, i) => i === ci ? { ...c, options: c.options.map((o, j) => j === oi ? v : o) } : c),
     );
-  }
-  function removeOption(ci: number, oi: number) {
+  }, []);
+
+  const removeOption = useCallback((ci: number, oi: number) => {
     setCust((prev) =>
       prev.map((c, i) => i === ci ? { ...c, options: c.options.filter((_, j) => j !== oi) } : c),
     );
-  }
-  function removeCustomization(i: number) {
-    setCust((prev) => prev.filter((_, idx) => idx !== i));
-  }
+  }, []);
 
+  const removeCustomization = useCallback((i: number) => {
+    setCust((prev) => prev.filter((_, idx) => idx !== i));
+  }, []);
+
+  // ── Submit ──
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
@@ -86,12 +218,11 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     setErrors({});
     setSaving(true);
 
-    const finalCategory = useCustomCat ? customCategory.trim() : category;
     const payload = {
       name: name.trim(),
       description: description.trim(),
       price: Math.round(Number(price)),
-      category: finalCategory,
+      category: useCustomCat ? customCategory.trim() : category,
       veg,
       popular,
       available: initialData.available ?? true,
@@ -101,18 +232,13 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
       customizations: customizations.filter((c) => c.label && c.options.length > 0),
     };
 
-    let dbError = null;
-    if (mode === "new") {
-      const { error } = await supabase.from("menu_items").insert(payload);
-      dbError = error;
-    } else {
-      const rowId = initialData.dbId ?? initialData.id;
-      const { error } = await supabase.from("menu_items").update(payload).eq("id", rowId);
-      dbError = error;
-    }
+    const { error } =
+      mode === "new"
+        ? await supabase.from("menu_items").insert(payload)
+        : await supabase.from("menu_items").update(payload).eq("id", initialData.dbId ?? initialData.id);
 
-    if (dbError) {
-      toast.error(dbError.message || "Something went wrong.");
+    if (error) {
+      toast.error(error.message || "Something went wrong.");
       setSaving(false);
       return;
     }
@@ -122,58 +248,56 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
     router.refresh();
   }
 
+  // ── Render ──
   return (
     <form onSubmit={handleSubmit} className="space-y-5" noValidate>
 
       {/* ── Basic information ── */}
-      <Section title="Basic Information">
-        <Field label="Dish Name" error={errors.name} required>
+      <SectionCard title="Basic Information">
+        <FormField label="Dish Name" error={errors.name} required>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Paneer Tikka"
-            className={iCls(!!errors.name)}
+            className={inputCls(!!errors.name)}
           />
-        </Field>
+        </FormField>
 
-        <Field label="Description" error={errors.description} required>
+        <FormField label="Description" error={errors.description} required>
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDesc(e.target.value)}
             placeholder="Describe the dish — ingredients, cooking style, accompaniments…"
-            className={cn(iCls(!!errors.description), "resize-none")}
+            className={cn(inputCls(!!errors.description), "resize-none")}
           />
-        </Field>
+        </FormField>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Price (₹)" error={errors.price} required>
+          <FormField label="Price (₹)" error={errors.price} required>
             <input
               type="number"
               min="1"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="249"
-              className={iCls(!!errors.price)}
+              className={inputCls(!!errors.price)}
             />
-          </Field>
-          <Field label="Image URL" error={errors.image} required>
+          </FormField>
+          <FormField label="Image URL" error={errors.image} required>
             <input
               type="url"
               value={image}
               onChange={(e) => setImage(e.target.value)}
               placeholder="https://…"
-              className={iCls(!!errors.image)}
+              className={inputCls(!!errors.image)}
             />
-          </Field>
+          </FormField>
         </div>
 
         {image && (
-          <div
-            className="overflow-hidden rounded-lg"
-            style={{ border: "1px solid var(--admin-border)" }}
-          >
+          <div className="overflow-hidden rounded-lg" style={{ border: "1px solid var(--admin-border)" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={image}
@@ -183,11 +307,11 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
             />
           </div>
         )}
-      </Section>
+      </SectionCard>
 
       {/* ── Category & flags ── */}
-      <Section title="Category & Flags">
-        <Field label="Category" error={errors.category} required>
+      <SectionCard title="Category & Flags">
+        <FormField label="Category" error={errors.category} required>
           {useCustomCat ? (
             <div className="flex gap-2">
               <input
@@ -195,17 +319,13 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
                 value={customCategory}
                 onChange={(e) => setCC(e.target.value)}
                 placeholder="New category name"
-                className={cn(iCls(!!errors.category), "flex-1")}
+                className={cn(inputCls(!!errors.category), "flex-1")}
               />
               <button
                 type="button"
                 onClick={() => setUseCC(false)}
-                className="rounded-lg px-3 text-sm transition"
-                style={{
-                  border: "1px solid var(--admin-border-strong)",
-                  color: "var(--admin-text-secondary)",
-                  background: "var(--admin-card-bg)",
-                }}
+                className="rounded-lg px-3 text-sm transition hover:opacity-80"
+                style={{ border: "1px solid var(--admin-border-strong)", color: "var(--admin-text-secondary)", background: "var(--admin-card-bg)" }}
               >
                 Cancel
               </button>
@@ -215,7 +335,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className={cn(iCls(false), "flex-1")}
+                className={cn(inputCls(false), "flex-1")}
               >
                 {DEFAULT_CATEGORIES.map((c) => (
                   <option key={c} value={c}>{c}</option>
@@ -224,60 +344,50 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               <button
                 type="button"
                 onClick={() => setUseCC(true)}
-                className="whitespace-nowrap rounded-lg px-3 text-sm transition"
-                style={{
-                  border: "1px solid var(--admin-border-strong)",
-                  color: "var(--admin-text-secondary)",
-                  background: "var(--admin-card-bg)",
-                }}
+                className="whitespace-nowrap rounded-lg px-3 text-sm transition hover:opacity-80"
+                style={{ border: "1px solid var(--admin-border-strong)", color: "var(--admin-text-secondary)", background: "var(--admin-card-bg)" }}
               >
                 + New
               </button>
             </div>
           )}
-        </Field>
+        </FormField>
 
         <div className="grid grid-cols-2 gap-4">
-          <Field label="Rating (1–5)">
+          <FormField label="Rating (1–5)">
             <input
-              type="number"
-              min="1" max="5" step="0.1"
+              type="number" min="1" max="5" step="0.1"
               value={rating}
               onChange={(e) => setRating(e.target.value)}
-              className={iCls(false)}
+              className={inputCls(false)}
             />
-          </Field>
-          <Field label="Review Count">
+          </FormField>
+          <FormField label="Review Count">
             <input
-              type="number"
-              min="0"
+              type="number" min="0"
               value={reviews}
               onChange={(e) => setReviews(e.target.value)}
-              className={iCls(false)}
+              className={inputCls(false)}
             />
-          </Field>
+          </FormField>
         </div>
 
         <div className="flex gap-3">
-          <ToggleChip label="Vegetarian" active={veg} color="emerald" onClick={() => setVeg((v) => !v)} />
-          <ToggleChip label="⭐ Popular" active={popular} color="amber" onClick={() => setPopular((v) => !v)} />
+          <ToggleChip label="Vegetarian"   active={veg}     color="emerald" onClick={() => setVeg((v) => !v)} />
+          <ToggleChip label="⭐ Popular"   active={popular} color="amber"   onClick={() => setPopular((v) => !v)} />
         </div>
-      </Section>
+      </SectionCard>
 
       {/* ── Customizations ── */}
-      <Section
+      <SectionCard
         title="Customizations"
         subtitle="Optional — e.g. Spice level, Portion size"
         action={
           <button
             type="button"
             onClick={addCustomization}
-            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-            style={{
-              border: "1px solid var(--admin-border-strong)",
-              color: "var(--admin-accent)",
-              background: "var(--admin-accent-light)",
-            }}
+            className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition hover:opacity-80"
+            style={{ border: "1px solid var(--admin-border-strong)", color: "var(--admin-accent)", background: "var(--admin-accent-light)" }}
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M12 5v14M5 12h14" />
@@ -290,28 +400,22 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
           <div
             key={ci}
             className="space-y-3 rounded-lg p-4"
-            style={{
-              border: "1px solid var(--admin-border)",
-              background: "var(--admin-bg)",
-            }}
+            style={{ border: "1px solid var(--admin-border)", background: "var(--admin-bg)" }}
           >
+            {/* Group label + remove */}
             <div className="flex items-center gap-3">
               <input
                 type="text"
                 value={cust.label}
                 onChange={(e) => updateCustomization(ci, "label", e.target.value)}
                 placeholder="Label (e.g. Spice Level)"
-                className={cn(iCls(false), "flex-1")}
+                className={cn(inputCls(false), "flex-1")}
               />
               <button
                 type="button"
                 onClick={() => removeCustomization(ci)}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition hover:opacity-80"
-                style={{
-                  background: "var(--admin-danger-bg)",
-                  border: "1px solid var(--admin-danger-border)",
-                  color: "var(--admin-danger)",
-                }}
+                style={{ background: "var(--admin-danger-bg)", border: "1px solid var(--admin-danger-border)", color: "var(--admin-danger)" }}
               >
                 <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M18 6 6 18M6 6l12 12" />
@@ -319,9 +423,11 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
               </button>
             </div>
 
+            {/* Options */}
             <div className="space-y-2">
               {cust.options.map((opt, oi) => (
                 <div key={oi} className="flex items-center gap-2">
+                  {/* Default radio */}
                   <button
                     type="button"
                     onClick={() => updateCustomization(ci, "defaultIndex", oi)}
@@ -344,7 +450,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
                     value={opt}
                     onChange={(e) => updateOption(ci, oi, e.target.value)}
                     placeholder={`Option ${oi + 1}`}
-                    className={cn(iCls(false), "flex-1 py-2")}
+                    className={cn(inputCls(false), "flex-1 py-2")}
                   />
                   {cust.options.length > 1 && (
                     <button
@@ -372,7 +478,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
             </button>
           </div>
         ))}
-      </Section>
+      </SectionCard>
 
       {/* ── Actions ── */}
       <div className="flex gap-3 pb-10">
@@ -380,11 +486,7 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
           type="button"
           onClick={() => router.back()}
           className="flex-1 rounded-lg py-3 text-sm font-medium transition hover:opacity-80"
-          style={{
-            border: "1px solid var(--admin-border-strong)",
-            color: "var(--admin-text-secondary)",
-            background: "var(--admin-card-bg)",
-          }}
+          style={{ border: "1px solid var(--admin-border-strong)", color: "var(--admin-text-secondary)", background: "var(--admin-card-bg)" }}
         >
           Cancel
         </button>
@@ -394,146 +496,9 @@ export default function MenuItemForm({ initialData = {}, mode }: MenuItemFormPro
           className="flex flex-1 items-center justify-center gap-2 rounded-lg py-3 text-sm font-semibold text-white shadow-sm transition hover:opacity-90 active:scale-[0.99] disabled:opacity-50"
           style={{ background: "var(--admin-accent)" }}
         >
-          {saving ? (
-            <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4z" />
-              </svg>
-              Saving…
-            </>
-          ) : mode === "new" ? "Add to Menu" : "Save Changes"}
+          {saving ? <><Spinner />Saving…</> : (mode === "new" ? "Add to Menu" : "Save Changes")}
         </button>
       </div>
     </form>
-  );
-}
-
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function Section({
-  title,
-  subtitle,
-  action,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  action?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      className="overflow-hidden rounded-xl"
-      style={{
-        background: "var(--admin-card-bg)",
-        border: "1px solid var(--admin-border)",
-      }}
-    >
-      <div
-        className="flex items-center justify-between px-5 py-4"
-        style={{ borderBottom: "1px solid var(--admin-border)" }}
-      >
-        <div>
-          <p className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>
-            {title}
-          </p>
-          {subtitle && (
-            <p className="mt-0.5 text-xs" style={{ color: "var(--admin-text-muted)" }}>
-              {subtitle}
-            </p>
-          )}
-        </div>
-        {action}
-      </div>
-      <div className="space-y-4 p-5">{children}</div>
-    </div>
-  );
-}
-
-function Field({
-  label,
-  error,
-  required,
-  children,
-}: {
-  label: string;
-  error?: string;
-  required?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <label
-        className="block text-[13px] font-semibold"
-        style={{ color: "var(--admin-text-primary)" }}
-      >
-        {label}{" "}
-        {required && <span style={{ color: "var(--admin-danger)" }}>*</span>}
-      </label>
-      {children}
-      {error && (
-        <p className="flex items-center gap-1.5 text-xs" style={{ color: "var(--admin-danger)" }}>
-          <svg viewBox="0 0 24 24" className="h-3 w-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M12 8v4M12 16h.01" />
-          </svg>
-          {error}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ToggleChip({
-  label,
-  active,
-  color,
-  onClick,
-}: {
-  label: string;
-  active: boolean;
-  color: "emerald" | "amber";
-  onClick: () => void;
-}) {
-  const activeStyle =
-    color === "emerald"
-      ? { background: "var(--admin-success-bg)", border: "1px solid var(--admin-success-border)", color: "var(--admin-success)" }
-      : { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" };
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition"
-      style={
-        active
-          ? activeStyle
-          : {
-              border: "1px solid var(--admin-border-strong)",
-              color: "var(--admin-text-secondary)",
-              background: "var(--admin-card-bg)",
-            }
-      }
-    >
-      <span
-        className="h-2 w-2 rounded-full"
-        style={{
-          background: active
-            ? color === "emerald"
-              ? "#34c38f"
-              : "#f1b44c"
-            : "var(--admin-border-strong)",
-        }}
-      />
-      {label}
-    </button>
-  );
-}
-
-function iCls(hasError: boolean) {
-  return cn(
-    "admin-input",
-    hasError && "has-error",
   );
 }

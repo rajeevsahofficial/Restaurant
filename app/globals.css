@@ -150,20 +150,27 @@ button { cursor: pointer; }
   padding: 0.625rem 0.875rem;
   font-size: 0.875rem;
   color: var(--admin-text-primary);
-  outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  /* Kill browser-native outline on every element type, including <select> */
+  outline: none !important;
+  box-shadow: none !important;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
 }
 .admin-input::placeholder { color: var(--admin-text-muted); }
-.admin-input:focus {
-  border-color: var(--admin-accent);
-  box-shadow: none;
+.admin-input:focus,
+.admin-input:focus-visible,
+.admin-input:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+  border-color: var(--admin-border-strong);
 }
-.admin-input.has-error {
+.admin-input.has-error,
+.admin-input.has-error:focus,
+.admin-input.has-error:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
   border-color: var(--admin-danger);
-  box-shadow: none;
-}
-.dark .admin-input.has-error {
-  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -189,11 +196,23 @@ button { cursor: pointer; }
 }
 .admin-scroll { scrollbar-width: thin; scrollbar-color: var(--admin-border-strong) transparent; }
 
-/* Focus ring */
-:focus-visible {
-  outline: 2px solid var(--admin-accent);
+/* ── Focus rings ──────────────────────────────────────────────────────────────
+   Admin panel: no outlines anywhere — state is communicated via border-color.
+   Customer pages: standard browser focus ring via the .customer-focus utility.
+   ─────────────────────────────────────────────────────────────────────────── */
+*:focus,
+*:focus-visible,
+*:focus-within {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Re-enable for customer-facing interactive elements */
+.customer-focus:focus-visible {
+  outline: 2px solid #a96534 !important;
   outline-offset: 2px;
   border-radius: 6px;
+  box-shadow: none !important;
 }
 
 /* ── Input group ─────────────────────────────────────────────────────────────
@@ -211,7 +230,8 @@ button { cursor: pointer; }
 }
 .input-group:focus-within {
   border-color: var(--admin-border-strong);
-  box-shadow: none;
+  box-shadow: none !important;
+  outline: none !important;
 }
 .input-group.has-error {
   border-color: var(--admin-danger);
@@ -254,8 +274,11 @@ button { cursor: pointer; }
   color: var(--admin-text-muted);
   opacity: 1;
 }
+.input-group input:focus,
 .input-group input:focus-visible,
+.input-group select:focus,
 .input-group select:focus-visible,
+.input-group textarea:focus,
 .input-group textarea:focus-visible {
   outline: none !important;
   box-shadow: none !important;
