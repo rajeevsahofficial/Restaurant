@@ -134,7 +134,7 @@ export default function ForgotPasswordPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@restaurant.com"
+                    placeholder="Enter your gmail"
                     className="admin-input"
                   />
                 </div>

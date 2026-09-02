@@ -85,7 +85,7 @@ function getGreeting(): string {
 function StatCard({ label, value, sub, icon, iconBg, href }: StatCardProps) {
   const inner = (
     <div
-      className="group flex items-center gap-4 rounded-xl p-5 transition hover:shadow-md"
+      className="group flex items-center gap-4 rounded-xl p-5 transition"
       style={{ background: "var(--admin-card-bg)", border: "1px solid var(--admin-border)" }}
     >
       <div
@@ -258,7 +258,7 @@ export default function DashboardPage() {
                 <Link
                   key={action.href}
                   href={action.href}
-                  className="group flex items-center gap-3 rounded-lg p-3.5 transition hover:shadow-md"
+                  className="group flex items-center gap-3 rounded-lg p-3.5 transition"
                   style={{ border: "1px solid var(--admin-border)", background: "var(--admin-bg)" }}
                 >
                   <div

@@ -94,7 +94,7 @@ export default function AdminLoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@restaurant.com"
+                placeholder="Enter your gmail"
                 className="admin-input"
               />
             </div>
@@ -121,7 +121,7 @@ export default function AdminLoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   className="admin-input pr-11"
                 />
                 <button

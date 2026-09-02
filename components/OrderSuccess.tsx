@@ -40,10 +40,6 @@ export default function OrderSuccess({
                 {tableNumber ? `Table ${tableNumber}` : "Walk-in"}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-black/45 dark:text-white/45">Total Paid</span>
-              <span className="font-bold text-[#a96534]">₹{grandTotal}</span>
-            </div>
           </div>
         </div>
 
