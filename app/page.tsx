@@ -189,7 +189,7 @@ function HomeContent() {
             ))
           ) : filteredFoods.length === 0 ? (
             <div className="py-16 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl shadow-sm dark:bg-white/10">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-2xl dark:bg-white/10">
                 🔍
               </div>
               <h3 className="mt-4 font-bold">No dishes found</h3>

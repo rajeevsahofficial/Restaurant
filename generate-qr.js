@@ -1,7 +1,7 @@
 
 import QRCode from "qrcode";
 
-const website = "http://admitbridge.in/";
+const website = "http://admitbridge.in";
 
 for (let table = 1; table <= 3; table++) {
   const url = `${website}/?table=${table}`;
