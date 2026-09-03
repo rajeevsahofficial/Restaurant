@@ -56,13 +56,13 @@ function EmptyState({ title, sub }: { title: string; sub: string }) {
 export default function MenuPage() {
   const supabase = createClient();
 
-  const [foods, setFoods]                     = useState<MenuItem[]>([]);
-  const [loading, setLoading]                 = useState(true);
-  const [search, setSearch]                   = useState("");
-  const [filterCategory, setFilterCategory]   = useState("All");
-  const [filterVeg, setFilterVeg]             = useState<VegFilter>("all");
-  const [confirmDelete, setConfirmDelete]     = useState<number | null>(null);
-  const [deleting, setDeleting]               = useState(false);
+  const [foods, setFoods] = useState<MenuItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [filterVeg, setFilterVeg] = useState<VegFilter>("all");
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchFoods = useCallback(async () => {
     setLoading(true);
@@ -99,7 +99,7 @@ export default function MenuPage() {
     } else {
       const msgs: Record<string, [string, string]> = {
         available: ["Marked as available", "Marked as unavailable"],
-        popular:   ["Marked as popular",   "Removed from popular"],
+        popular: ["Marked as popular", "Removed from popular"],
       };
       toast.success(!current ? msgs[field][0] : msgs[field][1]);
     }
@@ -126,10 +126,10 @@ export default function MenuPage() {
   };
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="px-4 pt-24 pb-6 sm:pt-6 sm:px-6 lg:px-8">
 
       {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-6 flex flex gap-4 items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--admin-text-primary)" }}>Menu</h1>
           <p className="mt-1 text-sm" style={{ color: "var(--admin-text-secondary)" }}>
@@ -175,23 +175,52 @@ export default function MenuPage() {
           )}
         </div>
 
-        {/* Category */}
-        <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="admin-input !w-auto min-w-[140px]">
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
+        {/* Veg / diet filter */}
+        <div className="flex gap-3">
+          <div
+            className="flex items-center rounded-xl p-1 gap-0.5"
+            style={{ background: "var(--admin-bg)", border: "1px solid var(--admin-border-strong)" }}
+          >
+            {(["all", "veg", "nonveg"] as const).map((v) => {
+              const active = filterVeg === v;
+              const label =
+                v === "all" ? "All" :
+                  v === "veg" ? "Veg" : "Non‑veg";
+              const dot =
+                v === "veg" ? "#22c55e" :
+                  v === "nonveg" ? "#ef4444" : null;
 
-        {/* Veg filter */}
-        <div className="flex overflow-hidden rounded-lg" style={{ border: "1px solid var(--admin-border-strong)" }}>
-          {(["all", "veg", "nonveg"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setFilterVeg(v)}
-              className="px-3.5 py-2.5 text-xs font-semibold transition"
-              style={filterVeg === v ? { background: "var(--admin-accent)", color: "#fff" } : { background: "var(--admin-card-bg)", color: "var(--admin-text-secondary)" }}
-            >
-              {v === "all" ? "All" : v === "veg" ? "🟢 Veg" : "🔴 Non-veg"}
-            </button>
-          ))}
+              return (
+                <button
+                  key={v}
+                  onClick={() => setFilterVeg(v)}
+                  className="relative flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-150"
+                  style={
+                    active
+                      ? { background: "var(--admin-card-bg)", color: "var(--admin-text-primary)", boxShadow: "0 1px 4px rgba(0,0,0,0.08), 0 0 0 1px var(--admin-border)" }
+                      : { background: "transparent", color: "var(--admin-text-muted)" }
+                  }
+                >
+                  {dot && (
+                    <span
+                      className="h-1.5 w-1.5 shrink-0 rounded-full"
+                      style={{ background: dot, opacity: active ? 1 : 0.5 }}
+                    />
+                  )}
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Category filter */}
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="admin-input !w-auto min-w-[150px]"
+          >
+            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+          </select>
         </div>
       </div>
 

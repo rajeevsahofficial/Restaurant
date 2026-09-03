@@ -197,7 +197,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="px-4 pt-24 pb-6 sm:pt-6 sm:px-6 lg:px-8">
 
       {/* Page header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">

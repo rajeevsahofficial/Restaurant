@@ -5,7 +5,7 @@ import MenuItemForm from "@/components/admin/MenuItemForm";
 
 export default function NewMenuItemPage() {
   return (
-    <div className="px-4 py-6 sm:px-6 lg:px-8">
+    <div className="px-4 pt-24 pb-6 sm:pt-6 sm:px-6 lg:px-8">
       <div className="mb-6 flex items-center gap-4">
         <Link
           href="/admin/menu"
