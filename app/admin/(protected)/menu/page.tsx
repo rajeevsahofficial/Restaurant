@@ -248,90 +248,174 @@ export default function MenuPage() {
             {filtered.map((food, idx) => (
               <div
                 key={food.id}
-                className={cn(
-                  "flex flex-col gap-3 px-5 py-4 transition sm:grid sm:grid-cols-[56px_1fr_80px_130px_80px_100px] sm:items-center sm:gap-4",
-                  !food.available && "opacity-55",
-                )}
+                className={cn(!food.available && "opacity-55")}
                 style={{ borderBottom: idx < filtered.length - 1 ? "1px solid var(--admin-border)" : "none" }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={food.image} alt={food.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
+                {/* ── Mobile card ── */}
+                <div className="flex gap-3 px-4 py-3.5 sm:hidden">
+                  {/* Image */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={food.image}
+                    alt={food.name}
+                    className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                  />
 
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className={cn("h-2 w-2 shrink-0 rounded-full", food.veg ? "bg-emerald-500" : "bg-red-500")} />
-                    <p className="truncate text-sm font-semibold" style={{ color: "var(--admin-text-primary)" }}>{food.name}</p>
-                    {food.popular && (
-                      <span
-                        className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                        style={{ background: "var(--admin-warning-bg)", color: "var(--admin-warning)" }}
+                  {/* Body */}
+                  <div className="min-w-0 flex-1">
+                    {/* Row 1 – name + toggle */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("h-2 w-2 shrink-0 rounded-full", food.veg ? "bg-emerald-500" : "bg-red-500")} />
+                          <p className="truncate text-sm font-semibold leading-tight" style={{ color: "var(--admin-text-primary)" }}>
+                            {food.name}
+                          </p>
+                        </div>
+                        <p className="mt-0.5 line-clamp-1 text-xs leading-snug" style={{ color: "var(--admin-text-muted)" }}>
+                          {food.description}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => toggleField(food.id, "available", food.available)}
+                        aria-label={food.available ? "Mark unavailable" : "Mark available"}
+                        className={cn("toggle-track shrink-0", food.available && "on")}
                       >
-                        Popular
+                        <span className="toggle-thumb" />
+                      </button>
+                    </div>
+
+                    {/* Row 2 – price + category + popular */}
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <span className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>
+                        ₹{food.price}
                       </span>
-                    )}
+                      <span
+                        className="rounded-md px-2 py-0.5 text-[11px] font-medium"
+                        style={{ background: "var(--admin-accent-light)", color: "var(--admin-accent)" }}
+                      >
+                        {food.category}
+                      </span>
+                      {food.popular && (
+                        <span
+                          className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          style={{ background: "var(--admin-warning-bg)", color: "var(--admin-warning)" }}
+                        >
+                          Popular
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Row 3 – actions */}
+                    <div className="mt-2.5 flex items-center gap-1.5">
+                      <button
+                        onClick={() => toggleField(food.id, "popular", food.popular)}
+                        title={food.popular ? "Remove from popular" : "Mark as popular"}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:opacity-80"
+                        style={food.popular
+                          ? { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" }
+                          : actionBtnBase}
+                      >
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill={food.popular ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                        </svg>
+                      </button>
+                      <Link
+                        href={`/admin/menu/${food.id}/edit`}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:opacity-80"
+                        style={actionBtnBase}
+                      >
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                        </svg>
+                      </Link>
+                      <button
+                        onClick={() => setConfirmDelete(food.id)}
+                        className="flex h-7 w-7 items-center justify-center rounded-lg transition hover:border-red-300"
+                        style={actionBtnBase}
+                      >
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <p className="mt-0.5 truncate text-xs" style={{ color: "var(--admin-text-muted)" }}>
-                    {food.description.slice(0, 60)}…
-                  </p>
                 </div>
 
-                <p className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>₹{food.price}</p>
+                {/* ── Desktop row (unchanged) ── */}
+                <div className="hidden sm:grid sm:grid-cols-[56px_1fr_80px_130px_80px_100px] sm:items-center sm:gap-4 sm:px-5 sm:py-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={food.image} alt={food.name} className="h-12 w-12 shrink-0 rounded-lg object-cover" />
 
-                <span
-                  className="w-fit rounded-md px-2.5 py-1 text-xs font-medium"
-                  style={{ background: "var(--admin-accent-light)", color: "var(--admin-accent)" }}
-                >
-                  {food.category}
-                </span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className={cn("h-2 w-2 shrink-0 rounded-full", food.veg ? "bg-emerald-500" : "bg-red-500")} />
+                      <p className="truncate text-sm font-semibold" style={{ color: "var(--admin-text-primary)" }}>{food.name}</p>
+                      {food.popular && (
+                        <span
+                          className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                          style={{ background: "var(--admin-warning-bg)", color: "var(--admin-warning)" }}
+                        >
+                          Popular
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-0.5 truncate text-xs" style={{ color: "var(--admin-text-muted)" }}>
+                      {food.description.slice(0, 60)}…
+                    </p>
+                  </div>
 
-                {/* Availability toggle */}
-                <button
-                  onClick={() => toggleField(food.id, "available", food.available)}
-                  aria-label={food.available ? "Mark unavailable" : "Mark available"}
-                  className={cn("toggle-track", food.available && "on")}
-                >
-                  <span className="toggle-thumb" />
-                </button>
+                  <p className="text-sm font-bold" style={{ color: "var(--admin-text-primary)" }}>₹{food.price}</p>
 
-                {/* Actions */}
-                <div className="flex items-center gap-1.5">
-                  {/* Popular */}
-                  <button
-                    onClick={() => toggleField(food.id, "popular", food.popular)}
-                    title={food.popular ? "Remove from popular" : "Mark as popular"}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80"
-                    style={food.popular
-                      ? { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" }
-                      : actionBtnBase
-                    }
+                  <span
+                    className="w-fit rounded-md px-2.5 py-1 text-xs font-medium"
+                    style={{ background: "var(--admin-accent-light)", color: "var(--admin-accent)" }}
                   >
-                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill={food.popular ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                    </svg>
+                    {food.category}
+                  </span>
+
+                  <button
+                    onClick={() => toggleField(food.id, "available", food.available)}
+                    aria-label={food.available ? "Mark unavailable" : "Mark available"}
+                    className={cn("toggle-track", food.available && "on")}
+                  >
+                    <span className="toggle-thumb" />
                   </button>
 
-                  {/* Edit */}
-                  <Link
-                    href={`/admin/menu/${food.id}/edit`}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80"
-                    style={actionBtnBase}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                      <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
-                    </svg>
-                  </Link>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => setConfirmDelete(food.id)}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:border-red-300"
-                    style={actionBtnBase}
-                  >
-                    <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
-                    </svg>
-                  </button>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => toggleField(food.id, "popular", food.popular)}
+                      title={food.popular ? "Remove from popular" : "Mark as popular"}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80"
+                      style={food.popular
+                        ? { background: "var(--admin-warning-bg)", border: "1px solid var(--admin-warning-border)", color: "var(--admin-warning)" }
+                        : actionBtnBase}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill={food.popular ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.8">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                      </svg>
+                    </button>
+                    <Link
+                      href={`/admin/menu/${food.id}/edit`}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80"
+                      style={actionBtnBase}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" />
+                      </svg>
+                    </Link>
+                    <button
+                      onClick={() => setConfirmDelete(food.id)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg transition hover:border-red-300"
+                      style={actionBtnBase}
+                    >
+                      <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

@@ -23,7 +23,7 @@ export default function CategoryPills({
               type="button"
               onClick={() => onChange(cat)}
               className={`
-                shrink-0 whitespace-nowrap rounded-full border px-4 py-1 text-[13px] font-medium transition-all duration-200 active:scale-[0.97]
+                shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition-all duration-200 active:scale-[0.97]
                 ${isActive ? `border-[#e8c978] bg-[#fff7df] text-[#8a6417] shadow-sm                 `
                   : `border-[#ebe8e1] bg-white text-[#77736b] hover:bg-[#faf9f6] hover:text-[#403d37]`
                 }
