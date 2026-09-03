@@ -356,11 +356,13 @@ export default function TablesPage() {
     try {
       const html2canvas = (await import("html2canvas")).default;
       const canvas = await html2canvas(printCardRef.current, {
-        scale: 1,          // the card is already 3× — no extra scaling needed
+        scale: 3,           // 3× upscale at capture time — ~1140px wide output
         useCORS: true,
+        allowTaint: true,
         backgroundColor: "#11100e",
         logging: false,
         imageTimeout: 0,
+        removeContainer: true,
       });
       const link = document.createElement("a");
       link.download = `qr-table-${qrTable.number}.png`;
@@ -571,24 +573,25 @@ export default function TablesPage() {
         </div>
       )}{/* modal */}
 
-      {/* ── Hidden high-res capture target (scale=3 → ~1140px wide) ── */}
+      {/* ── Hidden high-res capture target ── */}
+      {/* opacity:0 keeps it invisible to users but fully painted for html2canvas */}
       {qrTable && qrDataUrl && (
         <div
           aria-hidden="true"
           style={{
             position: "fixed",
             top: 0,
-            left: "-9999px",
+            left: 0,
             zIndex: -1,
             pointerEvents: "none",
-            visibility: "hidden",
+            opacity: 0,
           }}
         >
           <QrCard
             ref={printCardRef}
             table={qrTable}
             qrDataUrl={qrDataUrl}
-            scale={3}
+            scale={1}
           />
         </div>
       )}
