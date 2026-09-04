@@ -19,6 +19,8 @@ function CartContent() {
   const [nameError, setNameError] = useState(false);
   const [allFoods, setAllFoods] = useState<Food[]>([]);
   const [liveSettings, setLiveSettings] = useState<LiveSettings | null>(null);
+  // true until the first Supabase response arrives
+  const [loadingMenu, setLoadingMenu] = useState(true);
 
   // Fetch menu and settings from Supabase so cart reflects live DB data
   useEffect(() => {
@@ -32,6 +34,7 @@ function CartContent() {
       ]);
       if (menuRes.data) setAllFoods(menuRes.data as Food[]);
       setLiveSettings(settings);
+      setLoadingMenu(false);
     }
     load();
   }, []);
@@ -104,6 +107,34 @@ function CartContent() {
         grandTotal={grandTotal}
         onBackToMenu={() => router.push(backHref)}
       />
+    );
+  }
+
+  /* ── Loading skeleton — shown while menu fetch is in flight ── */
+  if (loadingMenu) {
+    return (
+      <div className="min-h-screen bg-[#f7f5f0] text-[#171714] dark:bg-[#141210] dark:text-white">
+        <main className="mx-auto min-h-screen max-w-md px-5">
+          {/* Header */}
+          <div className="flex items-center justify-between pt-5">
+            <div className="h-10 w-10 animate-pulse rounded-xl bg-black/8 dark:bg-white/8" />
+            <div className="h-5 w-24 animate-pulse rounded-full bg-black/8 dark:bg-white/8" />
+            <div className="h-10 w-10 animate-pulse rounded-xl bg-black/8 dark:bg-white/8" />
+          </div>
+          {/* Table strip */}
+          <div className="mt-5 h-16 animate-pulse rounded-2xl bg-black/8 dark:bg-white/8" />
+          {/* Name field */}
+          <div className="mt-4 h-24 animate-pulse rounded-2xl bg-black/8 dark:bg-white/8" />
+          {/* Items */}
+          <div className="mt-6 space-y-3">
+            {Array.from({ length: Object.keys(cart).length || 3 }).map((_, i) => (
+              <div key={i} className="h-[88px] animate-pulse rounded-2xl bg-black/8 dark:bg-white/8" />
+            ))}
+          </div>
+          {/* Bill */}
+          <div className="mt-4 h-44 animate-pulse rounded-2xl bg-black/8 dark:bg-white/8" />
+        </main>
+      </div>
     );
   }
 
@@ -211,32 +242,28 @@ function CartContent() {
         {/* ── Customer name ── */}
         <section className="px-5 pt-4">
           <div className="rounded-2xl border border-black/[0.06] bg-white px-4 py-4 dark:border-white/5 dark:bg-[#1e1c18]">
-            <label
-              htmlFor="customer-name"
-              className="flex items-center gap-2 text-sm font-bold"
-            >
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f3eee4] text-base dark:bg-white/8">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#f3eee4] text-base dark:bg-white/8">
                 👤
               </span>
-              Your Name
-              <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="customer-name"
-              type="text"
-              value={customerName}
-              onChange={(e) => {
-                setCustomerName(e.target.value);
-                if (e.target.value.trim()) setNameError(false);
-              }}
-              placeholder="e.g. Rahul Sharma"
-              className={`mt-3 w-full rounded-xl border bg-[#f8f6f1] px-4 py-3 text-sm outline-none placeholder:text-black/25 transition dark:bg-white/5 dark:placeholder:text-white/20 dark:text-white ${nameError
-                  ? "border-red-400 ring-1 ring-red-400"
-                  : "border-transparent focus:border-[#a96534]/40 focus:ring-1 focus:ring-[#a96534]/30"
+              <input
+                id="customer-name"
+                type="text"
+                value={customerName}
+                onChange={(e) => {
+                  setCustomerName(e.target.value);
+                  if (e.target.value.trim()) setNameError(false);
+                }}
+                placeholder="Enter your name"
+                className={`w-full rounded-xl border bg-[#f8f6f1] px-4 py-2 text-sm outline-none placeholder:text-black/25 transition dark:bg-white/5 dark:placeholder:text-white/20 dark:text-white ${
+                  nameError
+                    ? "border-red-400 ring-1 ring-red-400"
+                    : "border-transparent focus:border-[#a96534]/40 focus:ring-1 focus:ring-[#a96534]/30"
                 }`}
-            />
+              />
+            </div>
             {nameError && (
-              <p className="mt-1.5 text-xs text-red-500">
+              <p className="mt-2 pl-[52px] text-xs text-red-500">
                 Please enter your name before placing the order.
               </p>
             )}
